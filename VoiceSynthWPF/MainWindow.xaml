@@ -1,0 +1,48 @@
+﻿<Window x:Class="VoiceSynthWPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:VoiceSynthWPF"
+        mc:Ignorable="d"
+        Height="450" Width="800"
+        AllowsTransparency="False"
+        WindowStyle="None"
+        Foreground="{StaticResource PrimaryTextBrush}" 
+        Title="Voice Synth">
+    
+    <Window.Background>
+        <StaticResource ResourceKey="PanelsBrush" />
+    </Window.Background>
+    <WindowChrome.WindowChrome>
+        <WindowChrome 
+            CaptionHeight="1"
+            ResizeBorderThickness="4" 
+            CornerRadius="5"
+            GlassFrameThickness="10"/>
+    </WindowChrome.WindowChrome>
+    
+    <Grid x:Name="RootGrid" CacheMode="BitmapCache">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="30"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <local:TopPanel Grid.Row="0"/>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="30"/>
+            </Grid.RowDefinitions>
+            <TextBox x:Name="OutputBox" Grid.Row="0" BorderBrush="Transparent" Style="{StaticResource FlatTextBoxStyle}" IsReadOnly="True" GotFocus="OutputBox_OnGotFocus"/>
+            <Border Grid.Row="1" Margin="2,1,2,1" BorderThickness="1" BorderBrush="{StaticResource AdditionalBrush}" Background="{StaticResource PanelsBrush}" CornerRadius="5">
+                <TextBox x:Name="InputBox" FontSize="16" Margin="12,0,12,0" Style="{StaticResource FlatTextBoxStyle}"
+                         Foreground="{StaticResource PrimaryTextBrush}" 
+                         FontWeight="SemiBold" 
+                         SpellCheck.IsEnabled="True"
+                         Language="ru-RU"
+                         BorderBrush="Transparent"/>
+            </Border>
+
+        </Grid>
+    </Grid>
+</Window>

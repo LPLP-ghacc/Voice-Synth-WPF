@@ -1,0 +1,36 @@
+﻿<UserControl x:Class="VoiceSynthWPF.TopPanel"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="30" d:DesignWidth="300" Background="Transparent">
+        <Border x:Name="TopBorder">
+            <Grid>
+                <StackPanel Orientation="Horizontal" Background="#4A000000">
+                    <Image Source="Resources/micIco.ico" Margin="6,4,4,4"/>
+                    <TextBlock Text="Voice Synth" 
+                               Width="70"
+                               Foreground="{StaticResource PrimaryTextBrush}" 
+                               FontSize="13" 
+                               FontWeight="SemiBold"
+                               Margin="5"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,0,5,0">
+                    <Button x:Name="Minimize" HorizontalAlignment="Right" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Minimize_Click">
+                        <Grid>
+                            <Line X1="0" Y1="0" X2="15" Y2="0" Stroke="{StaticResource PrimaryTextBrush}" />
+                        </Grid>
+                    </Button>
+                    <Button x:Name="Exit" Width="25" Height="25" Margin="1" Style="{StaticResource FlatButtonStyle}" Click="Close_Click">
+                        <Path Data="M14.5,13.5 L1.5,0.5 M1.5,13.5 L14.5,0.5" 
+                              Stroke="#CCFFFFFF" 
+                              StrokeThickness="2.3" 
+                              StrokeLineJoin="Round"
+                              Stretch="Uniform"
+                              Width="14" Height="14"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+</UserControl>
