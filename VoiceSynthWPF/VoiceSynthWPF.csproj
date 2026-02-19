@@ -27,6 +27,7 @@
       <Content Include="Resources\micImage.png">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       </Content>
+      <None Remove="Resources\settings.svg" />
     </ItemGroup>
 
 </Project>

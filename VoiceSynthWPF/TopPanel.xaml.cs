@@ -19,5 +19,17 @@ public partial class TopPanel
 
     private void Minimize_Click(object sender, RoutedEventArgs e) => MainWindow.Instance!.WindowState = WindowState.Minimized;
 
-    private void Close_Click(object sender, RoutedEventArgs e) => Environment.Exit(0);
+    private async void Close_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await MainWindow.Instance!.SaveSnippetsAsync();
+            Environment.Exit(0);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            MainWindow.Instance!.Log(ex.Message);
+        }
+    }
 }

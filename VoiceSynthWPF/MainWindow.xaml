@@ -33,8 +33,15 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="30"/>
             </Grid.RowDefinitions>
-            <TextBox x:Name="OutputBox" Grid.Row="0" BorderBrush="Transparent" Style="{StaticResource FlatTextBoxStyle}" IsReadOnly="True" GotFocus="OutputBox_OnGotFocus"/>
-            <Border Grid.Row="1" Margin="2,1,2,1" BorderThickness="1" BorderBrush="{StaticResource AdditionalBrush}" Background="{StaticResource PanelsBrush}" CornerRadius="5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition/>
+            </Grid.ColumnDefinitions>
+
+            <ScrollViewer x:Name="Scroll" Grid.Row="0" Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <TextBox  x:Name="OutputBox"  TextWrapping="Wrap" BorderBrush="Transparent" Style="{StaticResource FlatTextBoxStyle}" IsReadOnly="True" GotFocus="OutputBox_OnGotFocus"/>
+            </ScrollViewer>
+            <Border Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="1" Margin="2,1,2,1" BorderThickness="1" BorderBrush="{StaticResource AdditionalBrush}" Background="{StaticResource PanelsBrush}" CornerRadius="5">
                 <TextBox x:Name="InputBox" FontSize="16" Margin="12,0,12,0" Style="{StaticResource FlatTextBoxStyle}"
                          Foreground="{StaticResource PrimaryTextBrush}" 
                          FontWeight="SemiBold" 
@@ -43,6 +50,26 @@
                          BorderBrush="Transparent"/>
             </Border>
 
+            <Grid Grid.Row="0" Column="1">
+                <StackPanel x:Name="Snippets">
+                    <Border Background="{StaticResource PanelsBrush2}" CornerRadius="10" Margin="5">
+                        <Grid>
+                            <Button x:Name="CreateSnippet" Style="{StaticResource FlatButtonStyle}" Click="CreateSnippet_OnClick">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M13.666 1.429l6.75 3.98l.096 .063l.093 .078l.106 .074a3.22 3.22 0 0 1 1.284 2.39l.005 .204v7.284c0 1.175 -.643 2.256 -1.623 2.793l-6.804 4.302c-.98 .538 -2.166 .538 -3.2 -.032l-6.695 -4.237a3.23 3.23 0 0 1 -1.678 -2.826v-7.285c0 -1.106 .57 -2.128 1.476 -2.705l6.95 -4.098c1 -.552 2.214 -.552 3.24 .015m-1.666 6.571a1 1 0 0 0 -1 1v2h-2a1 1 0 0 0 -.993 .883l-.007 .117a1 1 0 0 0 1 1h2v2a1 1 0 0 0 .883 .993l.117 .007a1 1 0 0 0 1 -1v-2h2a1 1 0 0 0 .993 -.883l.007 -.117a1 1 0 0 0 -1 -1h-2v-2a1 1 0 0 0 -.883 -.993z" Stroke="#DC0D00" 
+                                          StrokeThickness="1" 
+                                          StrokeLineJoin="Round"
+                                          Stretch="Uniform"
+                                          Width="14" Height="14"/>
+                                    <TextBlock Grid.Column="0" x:Name="PreviewText" TextAlignment="Left" Margin="10,5,5,5" Foreground="#DC0D00" Text="Add new Snippet"/>
+                                </StackPanel>
+
+                            </Button>
+                        </Grid>
+
+                    </Border>
+                </StackPanel>
+            </Grid>
         </Grid>
     </Grid>
 </Window>

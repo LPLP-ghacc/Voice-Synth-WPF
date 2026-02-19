@@ -35,11 +35,12 @@ public class Settings(string voiceInput, int voiceSpeed, int voiceVolume, int st
 public partial class MainWindow
 {
     public static MainWindow? Instance;
-    
     private static Settings? _settings;
-
+    private const string SnippetsFile = "snippets.json";
     private SpeechSynthesizer? _synth;
     private MMDevice? _cableDevice;
+
+    private readonly Action<string> _synthHandler; 
     
     public MainWindow()
     {
@@ -54,6 +55,21 @@ public partial class MainWindow
             {
                 InputBox.Text = string.Empty;
                 await SynthAsync(text);
+                Scroll.ScrollToEnd();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Log(e.Message);
+            }
+        };
+
+        _synthHandler = async void (text) =>
+        {
+            try
+            {
+                await SynthAsync(text);
+                Scroll.ScrollToEnd();
             }
             catch (Exception e)
             {
@@ -69,8 +85,11 @@ public partial class MainWindow
                 onMessageSend.Invoke(InputBox.Text.Trim());
             }
         };
+        
+        GlobalKeyboardHook.Start();
+        GlobalKeyboardHook.KeyPressed += OnGlobalKeyPressed;
     }
-
+    
     private Task InitAsync()
     {
         _settings = Settings.Load(Path.Combine(Environment.CurrentDirectory, "settings.json"));
@@ -97,6 +116,7 @@ public partial class MainWindow
         if (ruVoice != null) _synth.SelectVoice(_settings.ReaderName);
 #pragma warning restore CA1416
         
+        LoadSnippets();
         return Task.CompletedTask;
     }
     
@@ -132,13 +152,103 @@ public partial class MainWindow
         await tcs.Task;
     }
 
-    private void Log(string message)
-    {
-        OutputBox.Text += message + Environment.NewLine;
-    }
+    public void Log(string message) => OutputBox.Text += message + Environment.NewLine;
 
-    private void OutputBox_OnGotFocus(object sender, RoutedEventArgs e)
+    private void OutputBox_OnGotFocus(object sender, RoutedEventArgs e) => InputBox.Focus();
+
+    private void CreateSnippet_OnClick(object sender, RoutedEventArgs e)
     {
-        InputBox.Focus();
+        var window = new SnippetCreationWind(
+            "Создание сниппета",
+            string.Empty
+        )
+        {
+            Owner = GetWindow(this)
+        };
+
+        if (window.ShowDialog() != true) return;
+        
+        var nb = new NumButton();
+        if (window.ResultText1 != null) nb.SetText(window.ResultText1);
+        
+        nb.ActivationKey = window.SelectedKey;
+
+        nb.KeyHandler.Text = nb.ActivationKey.ToString();
+
+        Snippets.Children.Add(nb);
+    }
+    
+    private void OnGlobalKeyPressed(Key key)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            foreach (var button in Snippets.Children.OfType<NumButton>())
+            {
+                if (button.ActivationKey == key)
+                {
+                    _synthHandler?.Invoke(button.FullText);
+                }
+            }
+        });
+    }
+    
+    public async Task SaveSnippetsAsync()
+    {
+        var models = Snippets.Children
+            .OfType<NumButton>()
+            .Select(b => new SnippetModel
+            {
+                Text = b.FullText,
+                ActivationKey = b.ActivationKey
+            })
+            .ToList();
+
+        var json = JsonSerializer.Serialize(models, new JsonSerializerOptions
+        {
+            WriteIndented = true
+        });
+
+        await File.WriteAllTextAsync(
+            Path.Combine(Environment.CurrentDirectory, SnippetsFile),
+            json);
+    }
+    
+    private void LoadSnippets()
+    {
+        var path = Path.Combine(Environment.CurrentDirectory, SnippetsFile);
+
+        if (!File.Exists(path))
+            return;
+
+        var json = File.ReadAllText(path);
+
+        var models = JsonSerializer.Deserialize<List<SnippetModel>>(json);
+
+        if (models == null) return;
+
+        foreach (var model in models)
+        {
+            var nb = new NumButton();
+
+            nb.SetText(model.Text);
+            nb.ActivationKey = model.ActivationKey;
+            nb.KeyHandler.Text = model.ActivationKey.ToString();
+
+            Snippets.Children.Add(nb);
+        }
+    }
+    
+    protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        try
+        {
+            await SaveSnippetsAsync();
+            base.OnClosing(e);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Log(ex.Message);
+        }
     }
 }
