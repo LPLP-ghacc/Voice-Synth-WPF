@@ -1,0 +1,5 @@
+VoiceInput = CABLE Input
+VoiceSpeed = 0
+VoiceVolume = 100
+StdDelay = 10
+ReaderName = Microsoft Irina
