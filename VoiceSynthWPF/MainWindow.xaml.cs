@@ -1,34 +1,60 @@
 ﻿using System.IO;
 using System.Speech.Synthesis;
-using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
+using ConseqConcatenation;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
 
 namespace VoiceSynthWPF;
 
-public class Settings(string voiceInput, int voiceSpeed, int voiceVolume, int stdDelay, string readerName)
+public class Settings: IConseqData
 {
-    public string VoiceInput { get; init; } = voiceInput; // "CABLE Input"
-    public int VoiceSpeed { get; init; } = voiceSpeed; // 0
-    public int VoiceVolume { get; init; } = voiceVolume; // 100
-    public int StdDelay { get; init; } = stdDelay; // 10
-    public string ReaderName { get; init; } = readerName;
+    public string VoiceInput { get; init; }
+    public int VoiceSpeed { get; init; }
+    public int VoiceVolume { get; init; }
+    public int StdDelay { get; init; }
+    public string ReaderName { get; init; }
 
-    public static Settings Default { get; } = new("CABLE Input", 0, 100, 10, "Microsoft Irina");
+    private Settings(string voiceInput, int voiceSpeed, int voiceVolume, int stdDelay, string readerName) 
+    {
+        VoiceInput = voiceInput;
+        VoiceSpeed = voiceSpeed;
+        VoiceVolume = voiceVolume;
+        StdDelay = stdDelay;
+        ReaderName = readerName;
+    }
+
+    private static Settings Default { get; } = new("CABLE Input", 0, 100, 10, "Microsoft Irina");
 
     public async Task Save(string path, string fileName)
     {
-        var json = JsonSerializer.Serialize(this);
+        var conseq = this.Conqsequalize();
         
-        await File.WriteAllTextAsync(Path.Combine(path, fileName), json);
+        await File.WriteAllTextAsync(Path.Combine(path, fileName), conseq);
     }
 
-    public static Settings Load(string path)
+    public static async Task<Settings> Load(string path)
     {
-        var json = File.ReadAllText(path);
-        return JsonSerializer.Deserialize<Settings>(json) == null ? Default : JsonSerializer.Deserialize<Settings>(json)!;
+        if (!Path.Exists(path))
+        {
+            var settings = Default;
+            var conseqSave = settings.Conqsequalize();
+            await File.WriteAllTextAsync(Path.Combine(Environment.CurrentDirectory, "settings.cc"), conseqSave);
+            
+            return settings;
+        }
+        
+        var conseq = await File.ReadAllTextAsync(path);
+        
+        try
+        {
+            return Conseq.Deconqsequalize<Settings>(conseq);
+        }
+        catch
+        {
+            return Default;
+        }
     }
 }
 
@@ -36,7 +62,7 @@ public partial class MainWindow
 {
     public static MainWindow? Instance;
     private static Settings? _settings;
-    private const string SnippetsFile = "snippets.json";
+    private const string SnippetsFile = "snippets.cc";
     private SpeechSynthesizer? _synth;
     private MMDevice? _cableDevice;
 
@@ -90,9 +116,9 @@ public partial class MainWindow
         GlobalKeyboardHook.KeyPressed += OnGlobalKeyPressed;
     }
     
-    private Task InitAsync()
+    private async Task InitAsync()
     {
-        _settings = Settings.Load(Path.Combine(Environment.CurrentDirectory, "settings.json"));
+        _settings = await Settings.Load(Path.Combine(Environment.CurrentDirectory, "settings.cc"));
 
         // https://vb-audio.com/Cable/
         const string target = "CABLE Input";
@@ -116,8 +142,7 @@ public partial class MainWindow
         if (ruVoice != null) _synth.SelectVoice(_settings.ReaderName);
 #pragma warning restore CA1416
         
-        LoadSnippets();
-        return Task.CompletedTask;
+        await LoadSnippets();
     }
     
     private async Task SynthAsync(string text)
@@ -203,38 +228,39 @@ public partial class MainWindow
             })
             .ToList();
 
-        var json = JsonSerializer.Serialize(models, new JsonSerializerOptions
-        {
-            WriteIndented = true
-        });
-
+        var text = Conseq.Conqsequalize(models, ConseqFormat.Readable);
         await File.WriteAllTextAsync(
             Path.Combine(Environment.CurrentDirectory, SnippetsFile),
-            json);
+            text);
     }
     
-    private void LoadSnippets()
+    private async Task LoadSnippets()
     {
         var path = Path.Combine(Environment.CurrentDirectory, SnippetsFile);
 
         if (!File.Exists(path))
             return;
 
-        var json = File.ReadAllText(path);
+        var text = await File.ReadAllTextAsync(path);
 
-        var models = JsonSerializer.Deserialize<List<SnippetModel>>(json);
-
-        if (models == null) return;
-
-        foreach (var model in models)
+        try
         {
-            var nb = new NumButton();
+            var models = Conseq.Deconqsequalize<List<SnippetModel>>(text);
+            
+            foreach (var model in models)
+            {
+                var nb = new NumButton();
 
-            nb.SetText(model.Text);
-            nb.ActivationKey = model.ActivationKey;
-            nb.KeyHandler.Text = model.ActivationKey.ToString();
+                nb.SetText(model.Text);
+                nb.ActivationKey = model.ActivationKey;
+                nb.KeyHandler.Text = model.ActivationKey.ToString();
 
-            Snippets.Children.Add(nb);
+                Snippets.Children.Add(nb);
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
         }
     }
     
