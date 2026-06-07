@@ -16,7 +16,7 @@ public class Settings: IConseqData
     public int StdDelay { get; init; }
     public string ReaderName { get; init; }
 
-    private Settings(string voiceInput, int voiceSpeed, int voiceVolume, int stdDelay, string readerName) 
+    public Settings(string voiceInput, int voiceSpeed, int voiceVolume, int stdDelay, string readerName) 
     {
         VoiceInput = voiceInput;
         VoiceSpeed = voiceSpeed;
@@ -25,7 +25,7 @@ public class Settings: IConseqData
         ReaderName = readerName;
     }
 
-    private static Settings Default { get; } = new("CABLE Input", 0, 100, 10, "Microsoft Irina");
+    public static Settings Default { get; } = new("CABLE Input", 0, 100, 10, "Microsoft Irina");
 
     public async Task Save(string path, string fileName)
     {
@@ -119,34 +119,102 @@ public partial class MainWindow
     private async Task InitAsync()
     {
         _settings = await Settings.Load(Path.Combine(Environment.CurrentDirectory, "settings.cc"));
+        await ApplySettingsAsync(_settings);
+        await LoadSnippets();
+    }
 
-        // https://vb-audio.com/Cable/
-        const string target = "CABLE Input";
+    /// <summary>
+    /// Применяет настройки: выбирает аудиоустройство и синтезатор.
+    /// Возвращает false если аудиоустройство не найдено.
+    /// </summary>
+    private async Task<bool> ApplySettingsAsync(Settings settings)
+    {
+        // Dispose old synth if exists
+        _synth?.Dispose();
+        _synth = null;
 
         var enumerator = new MMDeviceEnumerator();
-        _cableDevice = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active)
-            .FirstOrDefault(d => d.FriendlyName.Contains(target))!;
+        var allDevices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active).ToList();
+
+        // Ищем точное совпадение, затем частичное
+        _cableDevice = allDevices.FirstOrDefault(d => d.FriendlyName == settings.VoiceInput)
+                    ?? allDevices.FirstOrDefault(d => d.FriendlyName.Contains(settings.VoiceInput));
+
+        if (_cableDevice == null)
+        {
+            var available = string.Join(", ", allDevices.Select(d => d.FriendlyName));
+            Log($"[ОШИБКА] Аудиоустройство '{settings.VoiceInput}' не найдено.");
+            Log($"Доступные устройства: {available}");
+            Log("Откройте Настройки и выберите нужное устройство.");
+            return false;
+        }
 
 #pragma warning disable CA1416
-        
         _synth = new SpeechSynthesizer();
-        _synth.Rate = _settings.VoiceSpeed;
-        _synth.Volume = _settings.VoiceVolume;
-        
-        foreach (var item in _synth.GetInstalledVoices())
+        _synth.Rate = settings.VoiceSpeed;
+        _synth.Volume = settings.VoiceVolume;
+
+        var voices = _synth.GetInstalledVoices().ToList();
+        Log($"Найдено голосов: {voices.Count}");
+        foreach (var item in voices)
+            Log($"  • {item.VoiceInfo.Name}");
+
+        var selectedVoice = voices.FirstOrDefault(v => v.VoiceInfo.Name == settings.ReaderName);
+        if (selectedVoice != null)
         {
-            Log(item.VoiceInfo.Name);
+            _synth.SelectVoice(settings.ReaderName);
+            Log($"Выбран голос: {settings.ReaderName}");
         }
-        
-        var ruVoice = _synth.GetInstalledVoices().FirstOrDefault(v => v.VoiceInfo.Name == _settings.ReaderName);
-        if (ruVoice != null) _synth.SelectVoice(_settings.ReaderName);
+        else if (voices.Count > 0)
+        {
+            var fallback = voices[0].VoiceInfo.Name;
+            _synth.SelectVoice(fallback);
+            Log($"[ПРЕДУПРЕЖДЕНИЕ] Голос '{settings.ReaderName}' не найден, используется: {fallback}");
+        }
+        else
+        {
+            Log("[ОШИБКА] Не найдено ни одного установленного голоса TTS.");
+            _synth.Dispose();
+            _synth = null;
+            return false;
+        }
 #pragma warning restore CA1416
-        
-        await LoadSnippets();
+
+        await Task.CompletedTask;
+        return true;
+    }
+
+    public async Task OpenSettingsAsync()
+    {
+        var current = _settings ?? Settings.Default;
+        var window = new SettingsWindow(current) { Owner = this };
+
+        if (window.ShowDialog() != true || window.ResultSettings == null)
+            return;
+
+        _settings = window.ResultSettings;
+
+        var ok = await ApplySettingsAsync(_settings);
+        if (ok)
+            Log("Настройки применены.");
+
+        await _settings.Save(Environment.CurrentDirectory, "settings.cc");
     }
     
     private async Task SynthAsync(string text)
     {
+        if (_synth == null)
+        {
+            Log("[ОШИБКА] Синтезатор речи не инициализирован. Проверьте настройки.");
+            return;
+        }
+
+        if (_cableDevice == null)
+        {
+            Log("[ОШИБКА] Аудиоустройство не найдено. Откройте Настройки и выберите устройство.");
+            return;
+        }
+
         var tcs = new TaskCompletionSource();
 
         Log($"=> {text}");
@@ -154,7 +222,7 @@ public partial class MainWindow
         using var ms = new MemoryStream();
 
 #pragma warning disable CA1416
-        _synth!.SetOutputToWaveStream(ms);
+        _synth.SetOutputToWaveStream(ms);
         await Task.Run(() => _synth.Speak(text));
 #pragma warning restore CA1416
 
@@ -229,11 +297,12 @@ public partial class MainWindow
             .ToList();
 
         var text = Conseq.Conqsequalize(models, ConseqFormat.Readable);
+        
         await File.WriteAllTextAsync(
             Path.Combine(Environment.CurrentDirectory, SnippetsFile),
             text);
     }
-    
+
     private async Task LoadSnippets()
     {
         var path = Path.Combine(Environment.CurrentDirectory, SnippetsFile);

@@ -19,6 +19,11 @@ public partial class TopPanel
 
     private void Minimize_Click(object sender, RoutedEventArgs e) => MainWindow.Instance!.WindowState = WindowState.Minimized;
 
+    private void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        _ = MainWindow.Instance!.OpenSettingsAsync();
+    }
+
     private async void Close_Click(object sender, RoutedEventArgs e)
     {
         try

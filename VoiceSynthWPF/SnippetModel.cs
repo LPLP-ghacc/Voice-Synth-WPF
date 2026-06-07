@@ -5,6 +5,6 @@ namespace VoiceSynthWPF;
 
 public class SnippetModel : IConseqData
 {
-    public string Text { get; set; } = string.Empty;
-    public Key ActivationKey { get; set; }
+    public string Text { get; init; } = string.Empty;
+    public Key ActivationKey { get; init; }
 }
