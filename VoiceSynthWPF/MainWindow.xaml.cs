@@ -97,7 +97,7 @@ public partial class MainWindow
 
     private readonly Action<string> _synthHandler;
 
-    private const string SnippetsFile = "snippets.json";
+    private const string SnippetsFile = "snippets.сс";
     private const string FileName = "settings.json";
 
     public MainWindow()
