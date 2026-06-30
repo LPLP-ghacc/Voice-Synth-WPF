@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Speech.Synthesis;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Input;
 using ConseqConcatenation;
@@ -8,13 +9,13 @@ using NAudio.Wave;
 
 namespace VoiceSynthWPF;
 
-public class Settings: IConseqData
+public class Settings
 {
-    public string VoiceInput { get; init; }
-    public int VoiceSpeed { get; init; }
-    public int VoiceVolume { get; init; }
-    public int StdDelay { get; init; }
-    public string ReaderName { get; init; }
+    public string VoiceInput { get; }
+    public int VoiceSpeed { get; }
+    public int VoiceVolume { get; }
+    public int StdDelay { get; }
+    public string ReaderName { get; }
 
     public Settings(string voiceInput, int voiceSpeed, int voiceVolume, int stdDelay, string readerName) 
     {
@@ -26,35 +27,44 @@ public class Settings: IConseqData
     }
 
     public static Settings Default { get; } = new("CABLE Input", 0, 100, 10, "Microsoft Irina");
-
+    
     public async Task Save(string path, string fileName)
     {
-        var conseq = this.Conqsequalize();
+        var json = JsonSerializer.Serialize(this);
         
-        await File.WriteAllTextAsync(Path.Combine(path, fileName), conseq);
+        await File.WriteAllTextAsync(Path.Combine(path, fileName), json);
     }
 
-    public static async Task<Settings> Load(string path)
+    public static async Task<Settings> Load(string path, string fileName)
     {
-        if (!Path.Exists(path))
+        if (!File.Exists(Path.Combine(path, fileName)))
         {
-            var settings = Default;
-            var conseqSave = settings.Conqsequalize();
-            await File.WriteAllTextAsync(Path.Combine(Environment.CurrentDirectory, "settings.cc"), conseqSave);
+            MainWindow.Instance?.Log($"Файл {Path.Combine(path, fileName)} не найден, либо невозможно считать.");
+            MainWindow.Instance?.Log($"Создаем новый файл сохранения ({fileName}).");
             
-            return settings;
+            var tempSave = JsonSerializer.Serialize(Default);
+            await File.WriteAllTextAsync(Path.Combine(path, fileName), tempSave);
+            
+            return Default;
         }
         
-        var conseq = await File.ReadAllTextAsync(path);
-        
+        var json = await File.ReadAllTextAsync(Path.Combine(path, fileName));
         try
         {
-            return Conseq.Deconqsequalize<Settings>(conseq);
+            var settings = JsonSerializer.Deserialize<Settings>(json);
+                
+            if (settings != null)
+            {
+                return settings;
+            }
         }
         catch
         {
+            MainWindow.Instance?.Log($"Файл {Path.Combine(path, fileName)} не найден, либо невозможно считать.");
             return Default;
         }
+
+        return Default;
     }
 }
 
@@ -62,12 +72,14 @@ public partial class MainWindow
 {
     public static MainWindow? Instance;
     private static Settings? _settings;
-    private const string SnippetsFile = "snippets.cc";
     private SpeechSynthesizer? _synth;
     private MMDevice? _cableDevice;
 
-    private readonly Action<string> _synthHandler; 
-    
+    private readonly Action<string> _synthHandler;
+
+    private const string SnippetsFile = "snippets.json";
+    private const string FileName = "settings.json";
+
     public MainWindow()
     {
         InitializeComponent();
@@ -118,7 +130,7 @@ public partial class MainWindow
     
     private async Task InitAsync()
     {
-        _settings = await Settings.Load(Path.Combine(Environment.CurrentDirectory, "settings.cc"));
+        _settings = await Settings.Load(Environment.CurrentDirectory, FileName);
         await ApplySettingsAsync(_settings);
         await LoadSnippets();
     }
@@ -198,7 +210,7 @@ public partial class MainWindow
         if (ok)
             Log("Настройки применены.");
 
-        await _settings.Save(Environment.CurrentDirectory, "settings.cc");
+        await _settings.Save(Environment.CurrentDirectory, FileName);
     }
     
     private async Task SynthAsync(string text)
@@ -337,7 +349,9 @@ public partial class MainWindow
     {
         try
         {
+            Log("Сохраняем настройки и выходим.");
             await SaveSnippetsAsync();
+            await _settings?.Save(Environment.CurrentDirectory, FileName)!;
             base.OnClosing(e);
         }
         catch (Exception ex)

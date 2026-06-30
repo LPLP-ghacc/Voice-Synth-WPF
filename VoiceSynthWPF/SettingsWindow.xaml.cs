@@ -77,17 +77,11 @@ public partial class SettingsWindow : Window
             DragMove();
     }
 
-    private void SpeedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (SpeedLabel != null)
-            SpeedLabel.Text = ((int)e.NewValue).ToString();
-    }
+    private void SpeedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) 
+        => SpeedLabel?.Text = ((int)e.NewValue).ToString();
 
-    private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-    {
-        if (VolumeLabel != null)
-            VolumeLabel.Text = ((int)e.NewValue).ToString();
-    }
+    private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e) 
+        => VolumeLabel?.Text = ((int)e.NewValue).ToString();
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {

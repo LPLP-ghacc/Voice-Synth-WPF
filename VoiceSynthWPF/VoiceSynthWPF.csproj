@@ -16,7 +16,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <None Remove="settings.json" />
       <None Remove="Resources\micIco.ico" />
       <Content Include="Resources\micIco.ico">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -386,18 +385,19 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="settings.cc">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </Content>
-    </ItemGroup>
-
-    <ItemGroup>
       <None Remove="piper\espeak-ng.dll" />
       <None Remove="piper\libtashkeel_model.ort" />
       <None Remove="piper\onnxruntime.dll" />
       <None Remove="piper\onnxruntime_providers_shared.dll" />
       <None Remove="piper\piper.exe" />
       <None Remove="piper\piper_phonemize.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="settings.json" />
+      <Resource Include="settings.json">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Resource>
     </ItemGroup>
 
 </Project>
