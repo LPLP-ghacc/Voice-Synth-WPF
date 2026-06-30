@@ -21,6 +21,7 @@ public partial class SettingsWindow : Window
 
         SpeedSlider.Value = current.VoiceSpeed;
         VolumeSlider.Value = current.VoiceVolume;
+        HotKeyBringToFront.Text = current.HotKeyBringToFront.ToString();
     }
 
     private void PopulateDevices()
@@ -93,7 +94,8 @@ public partial class SettingsWindow : Window
             voiceSpeed: (int)SpeedSlider.Value,
             voiceVolume: (int)VolumeSlider.Value,
             stdDelay: _current.StdDelay,
-            readerName: voice
+            readerName: voice,
+            Settings.StringToKey(HotKeyBringToFront.Text)
         );
 
         DialogResult = true;
@@ -104,5 +106,12 @@ public partial class SettingsWindow : Window
     {
         DialogResult = false;
         Close();
+    }
+
+    private void InputKey_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        e.Handled = true;
+        var selectedKey = e.Key;
+        HotKeyBringToFront.Text = selectedKey.ToString();
     }
 }

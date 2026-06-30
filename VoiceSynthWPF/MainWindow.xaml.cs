@@ -6,6 +6,7 @@ using System.Windows.Input;
 using ConseqConcatenation;
 using NAudio.CoreAudioApi;
 using NAudio.Wave;
+using static System.Enum;
 
 namespace VoiceSynthWPF;
 
@@ -16,17 +17,19 @@ public class Settings
     public int VoiceVolume { get; }
     public int StdDelay { get; }
     public string ReaderName { get; }
+    public Key HotKeyBringToFront { get; }
 
-    public Settings(string voiceInput, int voiceSpeed, int voiceVolume, int stdDelay, string readerName) 
+    public Settings(string voiceInput, int voiceSpeed, int voiceVolume, int stdDelay, string readerName, Key hotKeyBringToFront) 
     {
         VoiceInput = voiceInput;
         VoiceSpeed = voiceSpeed;
         VoiceVolume = voiceVolume;
         StdDelay = stdDelay;
         ReaderName = readerName;
+        HotKeyBringToFront = hotKeyBringToFront;
     }
 
-    public static Settings Default { get; } = new("CABLE Input", 0, 100, 10, "Microsoft Irina");
+    public static Settings Default { get; } = new("CABLE Input", 0, 100, 10, "Microsoft Irina", Key.F12);
     
     public async Task Save(string path, string fileName)
     {
@@ -65,6 +68,23 @@ public class Settings
         }
 
         return Default;
+    }
+
+    public static Key StringToKey(string key)
+    {
+        var result = Key.None;
+        try
+        {
+#pragma warning disable CA1806
+            TryParse(key, out result);
+#pragma warning restore CA1806
+        }
+        catch (Exception exception)
+        {
+            MainWindow.Instance!.Log(exception.ToString());
+        }
+
+        return result;
     }
 }
 
@@ -283,8 +303,28 @@ public partial class MainWindow
         Snippets.Children.Add(nb);
     }
     
+    private void BringToFront()
+    {
+        if (WindowState == WindowState.Minimized)
+            WindowState = WindowState.Normal;
+
+        Topmost = true;
+        Activate();
+        Focus();
+
+        Dispatcher.BeginInvoke(new Action(() =>
+        {
+            Topmost = false;
+        }));
+    }
+    
     private void OnGlobalKeyPressed(Key key)
     {
+        if (key == _settings!.HotKeyBringToFront)
+        {
+            BringToFront();
+        }
+        
         Dispatcher.Invoke(() =>
         {
             foreach (var button in Snippets.Children.OfType<NumButton>())

@@ -57,6 +57,18 @@
                     <ComboBox x:Name="VoiceComboBox" 
                               Style="{StaticResource FlatComboBoxStyle}"
                               Margin="0,0,0,0"/>
+                    
+                    <TextBlock Text="Вызов поверх приложений" 
+                               Foreground="{StaticResource GrayTextBrush}" 
+                               FontSize="11" Margin="0,12,0,4"/>
+                    <TextBox x:Name="HotKeyBringToFront" Background="{StaticResource PrimaryBrush}" 
+                             Foreground="{StaticResource GrayTextBrush}" 
+                             FontWeight="Bold" 
+                             VerticalAlignment="Center" Margin="10,5,10,5" Text="Нажмите любую кнопку"
+                             PreviewKeyDown="InputKey_PreviewKeyDown"
+                             IsReadOnly="True"
+                             TextAlignment="Center"
+                             Focusable="True"/>
 
                     <!-- Speed -->
                     <TextBlock Text="Скорость речи" 

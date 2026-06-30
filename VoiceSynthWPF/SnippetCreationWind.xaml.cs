@@ -33,9 +33,7 @@ public partial class SnippetCreationWind : Window
     private void Input2_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         e.Handled = true;
-
         SelectedKey = e.Key;
-
         Input2.Text = SelectedKey.ToString();
     }
     
